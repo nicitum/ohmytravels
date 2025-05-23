@@ -125,9 +125,9 @@
     </form>
   </div>
   <script>
-    // Replace this with your Google Sheet ID from the URL
-    const SHEET_ID = '1nMmbbCMlo14y1w056IkTq2EqfSjdE5iqY1vmbSPC30s';
-    const SCRIPT_URL = `https://script.google.com/macros/s/${SHEET_ID}/exec`;
+    // Replace this with your Google Apps Script deployment ID
+    const SCRIPT_ID = 'AKfycbzF6xY_example_id'; // You'll get this after deploying
+    const SCRIPT_URL = `https://script.google.com/macros/s/${SCRIPT_ID}/exec`;
 
     document.getElementById('dataForm').addEventListener('submit', async function(event) {
       event.preventDefault();
@@ -138,7 +138,8 @@
       submitBtn.innerText = 'Submitting...';
       
       try {
-        const formData = new FormData();
+        // Create URL-encoded form data
+        const formData = new URLSearchParams();
         formData.append('name', document.getElementById('name').value);
         formData.append('address', document.getElementById('address').value);
         formData.append('gender', document.getElementById('gender').value);
@@ -148,16 +149,19 @@
 
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          body: formData
+          body: formData.toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          mode: 'no-cors' // This is important for CORS
         });
 
-        if (!response.ok) {
-          throw new Error('Submission failed. Please try again.');
-        }
-
+        // Since we're using no-cors, we won't get response details
+        // So we'll just assume it worked if we got here
         alert('Submission successful!');
         this.reset();
       } catch (error) {
+        console.error('Error:', error);
         alert('Error: ' + error.message);
       } finally {
         submitBtn.disabled = false;

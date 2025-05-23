@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oh My Tours - Data Collection</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Add Google Sheets API -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body {
       background: linear-gradient(135deg, #1E3A8A, #E76F51);
@@ -122,102 +123,60 @@
         <label for="emergency">Emergency Number</label>
         <input type="tel" id="emergency" name="emergency" required placeholder="Enter emergency number" pattern="[0-9]{10}">
       </div>
+      <!-- Optional file uploads -->
       <div class="form-field">
-        <label for="aadharFront">Aadhar Card Front (JPG/PNG)</label>
-        <input type="file" id="aadharFront" name="aadharFront" accept="image/jpeg,image/png" required>
+        <label for="aadharFront">Aadhar Card Front (Optional) (JPG/PNG)</label>
+        <input type="file" id="aadharFront" name="aadharFront" accept="image/jpeg,image/png">
       </div>
       <div class="form-field">
-        <label for="aadharBack">Aadhar Card Back (JPG/PNG)</label>
-        <input type="file" id="aadharBack" name="aadharBack" accept="image/jpeg,image/png" required>
+        <label for="aadharBack">Aadhar Card Back (Optional) (JPG/PNG)</label>
+        <input type="file" id="aadharBack" name="aadharBack" accept="image/jpeg,image/png">
       </div>
       <div class="form-field">
-        <label for="aadharPdf">Aadhar Card PDF</label>
-        <input type="file" id="aadharPdf" name="aadharPdf" accept="application/pdf" required>
+        <label for="aadharPdf">Aadhar Card PDF (Optional)</label>
+        <input type="file" id="aadharPdf" name="aadharPdf" accept="application/pdf">
       </div>
       <button type="submit" class="submit-btn">Submit</button>
     </form>
   </div>
   <script>
-    const supabase = Supabase.createClient('https://fsbxfoubthytjemfwkiq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnhmb3VidGh5dGplbWZ3a2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzkwMzEsImV4cCI6MjA2MzU1NTAzMX0.ByItcFqyio-j7AzqrKEX9hnU_YblPUBJF39cAadlkBM');
+    // Replace this with your Google Sheet ID from the URL
+    const SHEET_ID = 'REPLACE_WITH_YOUR_GOOGLE_SHEET_ID';
+    const SCRIPT_URL = `https://script.google.com/macros/s/${SHEET_ID}/exec`;
 
     document.getElementById('dataForm').addEventListener('submit', async function(event) {
       event.preventDefault();
       
-      const name = document.getElementById('name').value;
-      const address = document.getElementById('address').value;
-      const gender = document.getElementById('gender').value;
-      const phone = document.getElementById('phone').value;
-      const emergency = document.getElementById('emergency').value;
-      const aadharFront = document.getElementById('aadharFront').files[0];
-      const aadharBack = document.getElementById('aadharBack').files[0];
-      const aadharPdf = document.getElementById('aadharPdf').files[0];
-
-      if (!aadharFront || !aadharBack || !aadharPdf) {
-        alert('Please upload all files.');
-        return;
-      }
-
-      if (!['image/jpeg', 'image/png'].includes(aadharFront.type) || !['image/jpeg', 'image/png'].includes(aadharBack.type)) {
-        alert('Aadhar Front and Back must be JPG or PNG.');
-        return;
-      }
-      if (aadharPdf.type !== 'application/pdf') {
-        alert('Aadhar PDF must be a PDF file.');
-        return;
-      }
-
-      if (aadharFront.size > 3 * 1024 * 1024 || aadharBack.size > 3 * 1024 * 1024 || aadharPdf.size > 3 * 1024 * 1024) {
-        alert('Each file must be under 3MB.');
-        return;
-      }
-
+      // Disable submit button
+      const submitBtn = this.querySelector('.submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Submitting...';
+      
       try {
-        // Upload files to Supabase Storage
-        const frontPath = `aadhar_front/${Date.now()}_${aadharFront.name}`;
-        const backPath = `aadhar_back/${Date.now()}_${aadharBack.name}`;
-        const pdfPath = `aadhar_pdf/${Date.now()}_${aadharPdf.name}`;
+        const formData = new FormData();
+        formData.append('name', document.getElementById('name').value);
+        formData.append('address', document.getElementById('address').value);
+        formData.append('gender', document.getElementById('gender').value);
+        formData.append('phone', document.getElementById('phone').value);
+        formData.append('emergency', document.getElementById('emergency').value);
+        formData.append('timestamp', new Date().toISOString());
 
-        const { error: frontError } = await supabase.storage
-          .from('oh-my-tours-files')
-          .upload(frontPath, aadharFront);
-        const { error: backError } = await supabase.storage
-          .from('oh-my-tours-files')
-          .upload(backPath, aadharBack);
-        const { error: pdfError } = await supabase.storage
-          .from('oh-my-tours-files')
-          .upload(pdfPath, aadharPdf);
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData
+        });
 
-        if (frontError || backError || pdfError) {
-          throw new Error('File upload failed: ' + (frontError || backError || pdfError).message);
-        }
-
-        // Get public URLs
-        const frontUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(frontPath).data.publicUrl;
-        const backUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(backPath).data.publicUrl;
-        const pdfUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(pdfPath).data.publicUrl;
-
-        // Save data to Supabase database
-        const { error: dbError } = await supabase
-          .from('submissions')
-          .insert({
-            name,
-            address,
-            gender,
-            phone,
-            emergency,
-            aadhar_front_url: frontUrl,
-            aadhar_back_url: backUrl,
-            aadhar_pdf_url: pdfUrl
-          });
-
-        if (dbError) {
-          throw new Error('Database error: ' + dbError.message);
+        if (!response.ok) {
+          throw new Error('Submission failed. Please try again.');
         }
 
         alert('Submission successful!');
-        document.getElementById('dataForm').reset();
+        this.reset();
       } catch (error) {
         alert('Error: ' + error.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Submit';
       }
     });
   </script>

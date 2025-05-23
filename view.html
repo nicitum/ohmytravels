@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oh My Tours - View Submissions</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Add Google Sheets API -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body {
       background: linear-gradient(135deg, #1E3A8A, #E76F51);
@@ -90,45 +91,53 @@
           <th>Gender</th>
           <th>Phone</th>
           <th>Emergency</th>
-          <th>Aadhar Front</th>
-          <th>Aadhar Back</th>
-          <th>Aadhar PDF</th>
+          <th>Timestamp</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td colspan="6" class="text-center py-4">Loading...</td>
+        </tr>
+      </tbody>
     </table>
   </div>
   <script>
-    const supabase = Supabase.createClient('https://fsbxfoubthytjemfwkiq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnhmb3VidGh5dGplbWZ3a2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzkwMzEsImV4cCI6MjA2MzU1NTAzMX0.ByItcFqyio-j7AzqrKEX9hnU_YblPUBJF39cAadlkBM');
+    // Replace this with your Google Sheet ID from the URL
+    const SHEET_ID = 'REPLACE_WITH_YOUR_GOOGLE_SHEET_ID';
+    const SCRIPT_URL = `https://script.google.com/macros/s/${SHEET_ID}/exec`;
 
     async function loadSubmissions() {
-      const { data, error } = await supabase
-        .from('submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const response = await fetch(SCRIPT_URL + '?action=read');
+        if (!response.ok) {
+          throw new Error('Failed to load data');
+        }
+        
+        const data = await response.json();
+        const tbody = document.querySelector('#submissionsTable tbody');
+        tbody.innerHTML = '';
 
-      if (error) {
-        alert('Error loading submissions: ' + error.message);
-        return;
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No submissions yet</td></tr>';
+          return;
+        }
+
+        data.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.name || ''}</td>
+            <td>${row.address || ''}</td>
+            <td>${row.gender || ''}</td>
+            <td>${row.phone || ''}</td>
+            <td>${row.emergency || ''}</td>
+            <td>${new Date(row.timestamp).toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        const tbody = document.querySelector('#submissionsTable tbody');
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-600">Error: ${error.message}</td></tr>`;
       }
-
-      const tbody = document.querySelector('#submissionsTable tbody');
-      tbody.innerHTML = '';
-
-      data.forEach(submission => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${submission.name}</td>
-          <td>${submission.address}</td>
-          <td>${submission.gender}</td>
-          <td>${submission.phone}</td>
-          <td>${submission.emergency}</td>
-          <td><a href="${submission.aadhar_front_url}" target="_blank">Download</a></td>
-          <td><a href="${submission.aadhar_back_url}" target="_blank">Download</a></td>
-          <td><a href="${submission.aadhar_pdf_url}" target="_blank">Download</a></td>
-        `;
-        tbody.appendChild(row);
-      });
     }
 
     loadSubmissions();

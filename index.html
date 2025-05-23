@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oh My Tours - Data Collection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1E3A8A, #E76F51);
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .logo {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #E76F51;
+      transition: transform 0.3s ease;
+    }
+    .logo:hover {
+      transform: scale(1.05);
+    }
+    .form-container {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 2.5rem;
+      max-width: 36rem;
+      width: 100%;
+      margin: 6rem auto;
+      animation: slideIn 0.5s ease-out;
+    }
+    .form-field label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #1E3A8A;
+      margin-bottom: 0.25rem;
+    }
+    .form-field input,
+    .form-field textarea,
+    .form-field select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      transition: all 0.2s;
+    }
+    .form-field input:focus,
+    .form-field textarea:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: #E76F51;
+      box-shadow: 0 0 0 3px rgba(231, 111, 81, 0.2);
+    }
+    .submit-btn {
+      background-color: #E76F51;
+      color: white;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      width: 100%;
+      font-weight: 600;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    .submit-btn:hover {
+      background-color: #d65f41;
+      transform: translateY(-2px);
+    }
+    .view-btn {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background-color: #1E3A8A;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    }
+    .view-btn:hover {
+      background-color: #1e40af;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <a href="view.html" class="view-btn">View Submissions</a>
+  <div class="logo">Oh My Tours</div>
+  <div class="form-container">
+    <form id="dataForm" class="space-y-4">
+      <div class="form-field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required placeholder="Enter your full name">
+      </div>
+      <div class="form-field">
+        <label for="address">Address</label>
+        <textarea id="address" name="address" rows="3" required placeholder="Enter your address"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender" required>
+          <option value="" disabled selected>Select gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number" pattern="[0-9]{10}">
+      </div>
+      <div class="form-field">
+        <label for="emergency">Emergency Number</label>
+        <input type="tel" id="emergency" name="emergency" required placeholder="Enter emergency number" pattern="[0-9]{10}">
+      </div>
+      <div class="form-field">
+        <label for="aadharFront">Aadhar Card Front (JPG/PNG)</label>
+        <input type="file" id="aadharFront" name="aadharFront" accept="image/jpeg,image/png" required>
+      </div>
+      <div class="form-field">
+        <label for="aadharBack">Aadhar Card Back (JPG/PNG)</label>
+        <input type="file" id="aadharBack" name="aadharBack" accept="image/jpeg,image/png" required>
+      </div>
+      <div class="form-field">
+        <label for="aadharPdf">Aadhar Card PDF</label>
+        <input type="file" id="aadharPdf" name="aadharPdf" accept="application/pdf" required>
+      </div>
+      <button type="submit" class="submit-btn">Submit</button>
+    </form>
+  </div>
+  <script>
+    const supabase = Supabase.createClient('https://fsbxfoubthytjemfwkiq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnhmb3VidGh5dGplbWZ3a2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzkwMzEsImV4cCI6MjA2MzU1NTAzMX0.ByItcFqyio-j7AzqrKEX9hnU_YblPUBJF39cAadlkBM');
+
+    document.getElementById('dataForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('name').value;
+      const address = document.getElementById('address').value;
+      const gender = document.getElementById('gender').value;
+      const phone = document.getElementById('phone').value;
+      const emergency = document.getElementById('emergency').value;
+      const aadharFront = document.getElementById('aadharFront').files[0];
+      const aadharBack = document.getElementById('aadharBack').files[0];
+      const aadharPdf = document.getElementById('aadharPdf').files[0];
+
+      if (!aadharFront || !aadharBack || !aadharPdf) {
+        alert('Please upload all files.');
+        return;
+      }
+
+      if (!['image/jpeg', 'image/png'].includes(aadharFront.type) || !['image/jpeg', 'image/png'].includes(aadharBack.type)) {
+        alert('Aadhar Front and Back must be JPG or PNG.');
+        return;
+      }
+      if (aadharPdf.type !== 'application/pdf') {
+        alert('Aadhar PDF must be a PDF file.');
+        return;
+      }
+
+      if (aadharFront.size > 3 * 1024 * 1024 || aadharBack.size > 3 * 1024 * 1024 || aadharPdf.size > 3 * 1024 * 1024) {
+        alert('Each file must be under 3MB.');
+        return;
+      }
+
+      try {
+        // Upload files to Supabase Storage
+        const frontPath = `aadhar_front/${Date.now()}_${aadharFront.name}`;
+        const backPath = `aadhar_back/${Date.now()}_${aadharBack.name}`;
+        const pdfPath = `aadhar_pdf/${Date.now()}_${aadharPdf.name}`;
+
+        const { error: frontError } = await supabase.storage
+          .from('oh-my-tours-files')
+          .upload(frontPath, aadharFront);
+        const { error: backError } = await supabase.storage
+          .from('oh-my-tours-files')
+          .upload(backPath, aadharBack);
+        const { error: pdfError } = await supabase.storage
+          .from('oh-my-tours-files')
+          .upload(pdfPath, aadharPdf);
+
+        if (frontError || backError || pdfError) {
+          throw new Error('File upload failed: ' + (frontError || backError || pdfError).message);
+        }
+
+        // Get public URLs
+        const frontUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(frontPath).data.publicUrl;
+        const backUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(backPath).data.publicUrl;
+        const pdfUrl = supabase.storage.from('oh-my-tours-files').getPublicUrl(pdfPath).data.publicUrl;
+
+        // Save data to Supabase database
+        const { error: dbError } = await supabase
+          .from('submissions')
+          .insert({
+            name,
+            address,
+            gender,
+            phone,
+            emergency,
+            aadhar_front_url: frontUrl,
+            aadhar_back_url: backUrl,
+            aadhar_pdf_url: pdfUrl
+          });
+
+        if (dbError) {
+          throw new Error('Database error: ' + dbError.message);
+        }
+
+        alert('Submission successful!');
+        document.getElementById('dataForm').reset();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
